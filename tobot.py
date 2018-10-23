@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import challonge
-import subprocess
 import sys
 import time
 
@@ -22,11 +21,14 @@ open_matches = []
 
 
 def update_matches():
+    """Get the latest match data from Challonge."""
+    # TODO: Do a 'merge' on in progress status instead of overwriting.
     global open_matches
     matches = challonge.matches.index(tourney_name)
     match_infos = [MatchInfo(m) for m in matches]
     # Sort matches by suggested play order
     open_matches = sorted(m for m in match_infos if m.state == 'open')
+
 
 def player_tag_from_id(id):
     """
@@ -46,9 +48,10 @@ def player_tag_from_id(id):
 class MatchInfo(object):
     """
     TODO: Mark match as in progress.
-        * the challonge API doesn't support, so we'll need to store a local
-              store of what matches are in progress.
+        * The Challonge API doesn't support this, so we'll need to store a
+            local store of what matches are in progress.
     TODO: Report scores.
+    TODO: Keep track of available setups.
     """
     def __init__(self, match):
         self.match_id = match['id']
@@ -71,12 +74,6 @@ class MatchInfo(object):
 
         return '{}{}:'.format(underway, self.identifier)
 
-    def __repr__(self):
-        return '{}{}: {} vs {}'.format(self.identifier_str(),
-                                     self.identifier,
-                                     self.player1_tag,
-                                     self.player2_tag)
-
     def _parts(self):
         return [self.identifier_str(),
                 self.player1_tag,
@@ -95,34 +92,60 @@ def column_print_matches(match_infos):
         print(" ".join((val.ljust(width) for val, width in zip(row, widths))))
 
 
-def nop():
-    pass
+class Command(object):
+    def __init__(self, help, func):
+        self.help = help
+        self.func = func
+
+
+def nop(*args):
+    print("This feature isn't implemented yet.")
+
+
+def report(args):
+    help_txt = 'r [match identifier] [player 1 score]-[player 2 score]'
+    if len(args) != 2:
+        print(help_txt)
+        return
+
+    identifier = args[0]
+    scores = args[1].split('-')
+
+    if len(scores) != 2:
+        print(help_txt)
+        return
 
 
 def prompt():
     def help_prompt():
-        for cmd, help in commands.items():
-            print('  {} - {}'.format(cmd, help[0]))
+        print('`I` represents the match identifier.')
+        for ch, cmd in commands.items():
+            print('  {} - {}'.format(ch, cmd.help))
 
     commands = {
-        'u': ('update match list', update_matches),
-        'h': ('print help', help_prompt),
-        '?': ('print help', help_prompt),
-        'q': ('quit', sys.exit),
-        '*': ('toggle in progress status', nop),
-        'r': ('report the result of a match. e.g. `r I 2-0`', nop),
+        'u': Command('update match list', update_matches),
+        '*': Command("toggle match's in progress status e.g. `* I`", nop),
+        'r': Command('report the result of a match e.g. `r I 2-0`', report),
+        'h': Command('print help', help_prompt),
+        '?': Command('print help', help_prompt),
+        'q': Command('quit', sys.exit),
     }
 
-    ch = input('> ').lower()
-    if ch in commands:
-        commands[ch][1]()
-    else:
-        print('invalid command: {}'.format(ch))
-    print()
+    user = input('> ').lower()
+    if user:
+        ch = user[0]
+        if ch in commands:
+            if len(user) == 1:
+                commands[ch].func()
+            else:
+                commands[ch].func(user.split(' ')[1:])
+        else:
+            print('invalid command: {}'.format(ch))
+            help_prompt()
+        print()
 
 
+update_matches()
 while True:
-    update_matches()
-
     column_print_matches(open_matches)
     prompt()
