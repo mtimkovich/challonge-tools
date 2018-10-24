@@ -144,7 +144,7 @@ def toggle_in_progress(args):
         in_progress_map[identifier] = True
     else:
         match.underway_at = None
-        in_progress_map[identifier] = None
+        del in_progress_map[identifier]
 
 
 def report(args):
