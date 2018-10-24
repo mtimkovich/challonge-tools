@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+TO Bot simplifies the running of Challonge brackets by showing a queue to
+call matches, and provides a CLI to update the bracket.
+"""
 import argparse
 import challonge
 import re
@@ -9,7 +13,7 @@ import defaults
 import util_challonge
 
 
-VERSION = 'v0.2'
+VERSION = 'v0.3'
 parser = argparse.ArgumentParser(description='TO Bot ' + VERSION,
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
@@ -21,7 +25,8 @@ parser.add_argument(
     help="the config file to read your Challonge credentials from")
 args = parser.parse_args()
 
-initialized = util_challonge.set_challonge_credentials_from_config(args.config_file)
+initialized = util_challonge.set_challonge_credentials_from_config(
+                args.config_file)
 if not initialized:
     sys.exit(1)
 
@@ -29,18 +34,25 @@ tourney_name = util_challonge.extract_tourney_name(args.tourney_url)
 # Cache participants so we only don't have to make a network call every time
 # we want to get tags.
 participants = challonge.participants.index(tourney_name)
-matches = challonge.matches.index(tourney_name)
 open_matches = []
+in_progress_map = {}
 
 
 def update_matches():
     """Get the latest match data from Challonge."""
-    # TODO: Do a 'merge' on in progress status instead of overwriting.
-    global open_matches
     matches = challonge.matches.index(tourney_name)
     match_infos = [MatchInfo(m) for m in matches]
+
     # Sort matches by suggested play order
+    global open_matches
     open_matches = sorted(m for m in match_infos if m.state == 'open')
+
+    # Set in progress based on our stored values.
+    for m in open_matches:
+        m.underway_at = in_progress_map.get(m.identifier, m.underway_at)
+
+    if len(matches) > 0 and len(open_matches) == 0:
+        print('Tournament is completed!')
 
 
 def player_tag(id):
@@ -50,7 +62,7 @@ def player_tag(id):
     O(n)
 
     @param id (int): Player ID.
-    returns: display name
+    returns: display name.
     """
     for p in participants:
         if p['id'] == id:
@@ -60,9 +72,6 @@ def player_tag(id):
 
 class MatchInfo(object):
     """
-    TODO: Mark match as in progress.
-        * The Challonge API doesn't support this, so we'll need to store a
-            local store of what matches are in progress.
     TODO: Keep track of available setups.
     """
     def __init__(self, match):
@@ -79,7 +88,7 @@ class MatchInfo(object):
             self.player2_tag = player_tag(self.player2_id)
 
     def identifier_str(self):
-        """The match identifier with an * if it's in progress."""
+        """The match identifier is prefixed with a * if it's in progress."""
         underway = ' '
         if self.underway_at is not None:
             underway = '*'
@@ -96,27 +105,46 @@ class MatchInfo(object):
         return self.suggested_play_order < other.suggested_play_order
 
 
-def column_print_matches(match_infos):
-    """Print match info in nice pretty columns."""
-    rows = [m._parts() for m in match_infos]
+def column_print(things):
+    """
+    Print in nice pretty columns.
+
+    |things| must implement a ._parts() method.
+    """
+    rows = [m._parts() for m in things]
     widths = [max(map(len, col)) for col in zip(*rows)]
     for row in rows:
         print(" ".join((val.ljust(width) for val, width in zip(row, widths))))
 
 
-class Command(object):
-    def __init__(self, help, func):
-        self.help = help
-        self.func = func
-
-
-def nop(args):
-    print("This feature isn't implemented yet.")
-
-
 def confirm(question):
     """Ask 'em my questions and get some answers."""
     return input(question + ' [Y/n] ').lower() in ['y', 'yes']
+
+
+def get_match_from_identifier(identifier):
+    for m in open_matches:
+        if m.identifier == identifier:
+            return m
+    else:
+        print('match {} not found.'.format(identifier))
+        return None
+
+
+def toggle_in_progress(args):
+    if not args:
+        print('* [match identifier]')
+        return
+
+    identifier = args[0].upper()
+    match = get_match_from_identifier(identifier)
+
+    if match.underway_at is None:
+        match.underway_at = True
+        in_progress_map[identifier] = True
+    else:
+        match.underway_at = None
+        in_progress_map[identifier] = None
 
 
 def report(args):
@@ -133,13 +161,8 @@ def report(args):
         print(help_txt)
         return
 
-    match = None
-    for m in open_matches:
-        if m.identifier == identifier:
-            match = m
-            break
-    else:
-        print('match {} not found.'.format(identifier))
+    match = get_match_from_identifier(identifier)
+    if match is None:
         return
 
     score_val = score.split('-')
@@ -152,49 +175,97 @@ def report(args):
         loser_id = match.player1_id
         print_score = print_score[::-1]
 
-    yes = confirm('{} beat {} {}, correct?'.format(player_tag(winner_id),
-                                                   player_tag(loser_id),
-                                                   print_score))
+    yes = confirm('{} beat {} {}?'.format(player_tag(winner_id),
+                                          player_tag(loser_id),
+                                          print_score))
     if yes:
         challonge.matches.update(tourney_name, match.id, scores_csv=score,
                                  winner_id=winner_id)
         update_matches()
 
 
+class Commander(object):
+    """Object to hold all the beautiful commands."""
+    def __init__(self, *cmds):
+        self._commands = {}
+
+        self.add(*cmds)
+
+    def _add(self, cmd):
+        self._commands[cmd.short] = cmd
+        self._commands[cmd.long] = cmd
+
+    def add(self, *cmds):
+        for cmd in cmds:
+            self._add(cmd)
+
+    def __getitem__(self, key):
+        return self._commands.get(key)
+
+    def __contains__(self, item):
+        return self[item] is not None
+
+    def help_prompt(self):
+        print('`A` represents the match identifier.')
+        output = [cmd for key, cmd in
+                  sorted(self._commands.items(), key=lambda d: d[1])
+                  if len(key) == 1]
+        column_print(output)
+
+
+class Command(object):
+    index = 0
+
+    def __init__(self, short, long, help, func):
+        self.short = short
+        self.long = long
+        self.help = help
+        self.func = func
+        self.index = Command.index
+        Command.index += 1
+
+    def _parts(self):
+        return [' ', self.long, '({})'.format(self.short), ' ' + self.help]
+
+    def __lt__(self, other):
+        return self.index < other.index
+
+
+commander = Commander(
+    Command('u', 'update', 'update match info', update_matches),
+    Command('*', 'start', "toggle match's in progress status e.g. `start A`",
+            toggle_in_progress),
+    Command('r', 'report', 'report the result of a match e.g. `report A 2-0`',
+            report),
+)
+commander.add(
+    Command('h', 'help', 'print help', commander.help_prompt),
+    Command('?', 'help', 'print help', commander.help_prompt),
+    Command('q', 'quit', 'quit', sys.exit),
+)
+
+
 def prompt():
     """The main user interaction loop."""
-    def help_prompt():
-        print('`A` represents the match identifier.')
-        for ch, cmd in commands.items():
-            print('  {} - {}'.format(ch, cmd.help))
-
-    commands = {
-        'u': Command('update match list', update_matches),
-        '*': Command("toggle match's in progress status e.g. `* A`", nop),
-        'r': Command('report the result of a match e.g. `r A 2-0`', report),
-        'h': Command('print help', help_prompt),
-        '?': Command('print help', help_prompt),
-        'q': Command('quit', sys.exit),
-    }
-
     user = input('> ').lower()
     if user:
-        ch = user[0]
-        if ch in commands:
-            if len(user) == 1:
-                commands[ch].func()
+        split = user.split(' ')
+        ch = split[0]
+        if ch in commander:
+            if len(split) == 1:
+                commander[ch].func()
             else:
-                commands[ch].func(user.split(' ')[1:])
+                commander[ch].func(split[1:])
         else:
             print('invalid command: {}'.format(ch))
-            help_prompt()
+            commander.help_prompt()
     else:
-        help_prompt()
+        commander.help_prompt()
 
     print()
 
 
 update_matches()
 while True:
-    column_print_matches(open_matches)
+    column_print(open_matches)
     prompt()
