@@ -1,18 +1,31 @@
 #!/usr/bin/env python
+import argparse
 import challonge
+import re
+import readline
 import sys
-import time
 
+import defaults
 import util_challonge
 
 
-config_file = '../challonge.ini'
-initialized = util_challonge.set_challonge_credentials_from_config(config_file)
+VERSION = 'v0.2'
+parser = argparse.ArgumentParser(description='TO Bot ' + VERSION,
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument(
+    "tourney_url",
+    help="the URL of the tourney")
+parser.add_argument(
+    "--config_file",
+    default=defaults.DEFAULT_CONFIG_FILENAME,
+    help="the config file to read your Challonge credentials from")
+args = parser.parse_args()
+
+initialized = util_challonge.set_challonge_credentials_from_config(args.config_file)
 if not initialized:
     sys.exit(1)
 
-tourney_url = 'https://challonge.com/tobot_test'
-tourney_name = util_challonge.extract_tourney_name(tourney_url)
+tourney_name = util_challonge.extract_tourney_name(args.tourney_url)
 # Cache participants so we only don't have to make a network call every time
 # we want to get tags.
 participants = challonge.participants.index(tourney_name)
@@ -30,7 +43,7 @@ def update_matches():
     open_matches = sorted(m for m in match_infos if m.state == 'open')
 
 
-def player_tag_from_id(id):
+def player_tag(id):
     """
     Get the player tag, given a player ID.
 
@@ -50,21 +63,20 @@ class MatchInfo(object):
     TODO: Mark match as in progress.
         * The Challonge API doesn't support this, so we'll need to store a
             local store of what matches are in progress.
-    TODO: Report scores.
     TODO: Keep track of available setups.
     """
     def __init__(self, match):
-        self.match_id = match['id']
-        self.id1 = match['player1_id']
-        self.id2 = match['player2_id']
+        self.id = match['id']
+        self.player1_id = match['player1_id']
+        self.player2_id = match['player2_id']
         self.state = match['state']
         self.suggested_play_order = match['suggested_play_order']
         self.identifier = match['identifier']
         self.underway_at = match['underway_at']
 
         if self.state == 'open':
-            self.player1_tag = player_tag_from_id(self.id1)
-            self.player2_tag = player_tag_from_id(self.id2)
+            self.player1_tag = player_tag(self.player1_id)
+            self.player2_tag = player_tag(self.player2_id)
 
     def identifier_str(self):
         """The match identifier with an * if it's in progress."""
@@ -98,34 +110,68 @@ class Command(object):
         self.func = func
 
 
-def nop(*args):
+def nop(args):
     print("This feature isn't implemented yet.")
 
 
+def confirm(question):
+    """Ask 'em my questions and get some answers."""
+    return input(question + ' [Y/n] ').lower() in ['y', 'yes']
+
+
 def report(args):
+    """Report at match's result."""
     help_txt = 'r [match identifier] [player 1 score]-[player 2 score]'
     if len(args) != 2:
         print(help_txt)
         return
 
-    identifier = args[0]
-    scores = args[1].split('-')
+    identifier = args[0].upper()
+    score = args[1]
 
-    if len(scores) != 2:
+    if not re.match(r'\d-\d', score):
         print(help_txt)
         return
 
+    match = None
+    for m in open_matches:
+        if m.identifier == identifier:
+            match = m
+            break
+    else:
+        print('match {} not found.'.format(identifier))
+        return
+
+    score_val = score.split('-')
+    print_score = score
+    if score_val[0] > score_val[1]:
+        winner_id = match.player1_id
+        loser_id = match.player2_id
+    else:
+        winner_id = match.player2_id
+        loser_id = match.player1_id
+        print_score = print_score[::-1]
+
+    yes = confirm('{} beat {} {}, correct?'.format(player_tag(winner_id),
+                                                   player_tag(loser_id),
+                                                   print_score))
+    if yes:
+        challonge.matches.update(tourney_name, match.id, scores_csv=score,
+                                 winner_id=winner_id)
+        update_matches()
+
 
 def prompt():
+    """The main user interaction loop."""
     def help_prompt():
-        print('`I` represents the match identifier.')
+        print('`A` represents the match identifier.')
         for ch, cmd in commands.items():
             print('  {} - {}'.format(ch, cmd.help))
 
     commands = {
         'u': Command('update match list', update_matches),
-        '*': Command("toggle match's in progress status e.g. `* I`", nop),
-        'r': Command('report the result of a match e.g. `r I 2-0`', report),
+        '*': Command("toggle match's in progress status e.g. `* A`", nop),
+        'r': Command('report the result of a match e.g. `r A 2-0`', report),
         'h': Command('print help', help_prompt),
         '?': Command('print help', help_prompt),
         'q': Command('quit', sys.exit),
@@ -142,7 +188,10 @@ def prompt():
         else:
             print('invalid command: {}'.format(ch))
             help_prompt()
-        print()
+    else:
+        help_prompt()
+
+    print()
 
 
 update_matches()
