@@ -27,7 +27,12 @@ def column_print(things):
 
 def confirm(question):
     """Ask 'em my questions and get some answers."""
-    return input(question + ' [Y/n] ').lower() in ['y', 'yes']
+    ans = input(question + ' [Y/n] ').lower()
+    if ans:
+        # Don't store this input in history.
+        readline.remove_history_item(
+            readline.get_current_history_length()-1)
+    return ans in ['y', 'yes']
 
 
 class Commander(object):
@@ -217,10 +222,13 @@ class TOBot(object):
         if score_val[0] > score_val[1]:
             winner_id = match.player1_id
             loser_id = match.player2_id
-        else:
+        elif score_val[0] < score_val[1]:
             winner_id = match.player2_id
             loser_id = match.player1_id
             print_score = print_score[::-1]
+        else:
+            print("A tie? I don't think so.")
+            return
 
         yes = confirm('{} beat {} {}?'.format(match.player_tag(winner_id),
                                               match.player_tag(loser_id),
