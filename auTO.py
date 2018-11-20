@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-TO Bot simplifies the running of Challonge brackets by showing a queue to
+auTO simplifies the running of Challonge brackets by showing a queue to
 call matches, and provides a CLI to update the bracket.
 """
 import argparse
@@ -133,7 +133,7 @@ class MatchInfo(object):
         return self.suggested_play_order < other.suggested_play_order
 
 
-class TOBot(object):
+class auTO(object):
     def __init__(self, tourney_url):
         self.tourney_name = util_challonge.extract_tourney_name(tourney_url)
         # Cache participants so we only don't have to make a network call
@@ -192,7 +192,9 @@ class TOBot(object):
         identifier = args[0].upper()
         match = self.get_match_from_identifier(identifier)
 
-        if match.underway_at is None:
+        if match is None:
+            return
+        elif match.underway_at is None:
             match.underway_at = True
             self.in_progress_map[identifier] = True
         else:
@@ -259,9 +261,9 @@ class TOBot(object):
 
 
 if __name__ == '__main__':
-    VERSION = 'v0.4'
+    VERSION = 'v0.5'
     parser = argparse.ArgumentParser(
-                description='TO Bot ' + VERSION,
+                description='auTO ' + VERSION,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "tourney_url",
@@ -277,9 +279,9 @@ if __name__ == '__main__':
     if not initialized:
         sys.exit(1)
 
-    # Initialize TO Bot
-    to = TOBot(args.tourney_url)
+    # Initialize auTO
+    auto = auTO(args.tourney_url)
 
     while True:
-        to.print_open_matches()
-        to.prompt()
+        auto.print_open_matches()
+        auto.prompt()
