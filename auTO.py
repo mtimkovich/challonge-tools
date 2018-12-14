@@ -93,7 +93,8 @@ class MatchInfo(object):
         self.state = match['state']
         self.suggested_play_order = match['suggested_play_order']
         self.identifier = match['identifier']
-        self.underway_at = match['underway_at']
+
+        self.in_progress = match['underway_at'] is not None
         self.participants = participants
 
         if self.state == 'open':
@@ -118,7 +119,7 @@ class MatchInfo(object):
     def identifier_str(self):
         """The match identifier is prefixed with a * if it's in progress."""
         underway = ' '
-        if self.underway_at is not None:
+        if self.in_progress:
             underway = '*'
 
         return '{}{}:'.format(underway, self.identifier)
@@ -130,6 +131,11 @@ class MatchInfo(object):
                 self.player2_tag]
 
     def __lt__(self, other):
+        """Sort the unplayed matches before the the in progress ones."""
+        if self.in_progress < other.in_progress:
+            return True
+        elif self.in_progress > other.in_progress:
+            return False
         return self.suggested_play_order < other.suggested_play_order
 
 
@@ -162,18 +168,18 @@ class auTO(object):
         matches = challonge.matches.index(self.tourney_name)
         match_infos = [MatchInfo(m, self.participants) for m in matches]
 
-        # Sort matches by suggested play order
-        self.open_matches = sorted(m for m in match_infos if m.state == 'open')
-
         # Set in progress based on our stored values.
-        for m in self.open_matches:
-            m.underway_at = self.in_progress_map.get(m.identifier,
-                                                     m.underway_at)
+        for m in match_infos:
+            m.in_progress = self.in_progress_map.get(m.identifier,
+                                                     m.in_progress)
+
+        self.open_matches = sorted(m for m in match_infos if m.state == 'open')
 
         if len(matches) > 0 and len(self.open_matches) == 0:
             print('Tournament is completed!')
 
     def print_open_matches(self):
+        self.open_matches = sorted(self.open_matches)
         column_print(self.open_matches)
 
     def get_match_from_identifier(self, identifier):
@@ -194,12 +200,12 @@ class auTO(object):
 
         if match is None:
             return
-        elif match.underway_at is None:
-            match.underway_at = True
-            self.in_progress_map[identifier] = True
-        else:
-            match.underway_at = None
+        elif match.in_progress:
+            match.in_progress = False
             del self.in_progress_map[identifier]
+        else:
+            match.in_progress = True
+            self.in_progress_map[identifier] = True
 
     def report(self, args):
         """Report at match's result."""
