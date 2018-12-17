@@ -132,12 +132,8 @@ class MatchInfo(object):
 
     def __lt__(self, other):
         """Sort the unplayed matches before the the in progress ones."""
-        if self.in_progress < other.in_progress:
-            return True
-        elif self.in_progress > other.in_progress:
-            return False
-        return self.suggested_play_order < other.suggested_play_order
-
+        return ((self.in_progress, self.suggested_play_order)
+                < (other.in_progress, other.suggested_play_order))
 
 class auTO(object):
     def __init__(self, tourney_url):
