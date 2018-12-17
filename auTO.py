@@ -245,25 +245,29 @@ class auTO(object):
     def prompt(self):
         """The main user interaction loop."""
         user = input('> ').lower()
-        if user:
-            split = user.split(' ')
-            ch = split[0]
-            if ch in self.commands:
-                if len(split) == 1:
-                    self.commands[ch].func()
-                else:
-                    self.commands[ch].func(split[1:])
-            else:
-                print('invalid command: {}'.format(ch))
-                self.commands.help_prompt()
-        else:
+        if not user:
             self.commands.help_prompt()
+            print()
+            return
 
+        split = user.split(' ')
+        ch = split[0]
+
+        if ch not in self.commands:
+            print('invalid command: {}'.format(ch))
+            self.commands.help_prompt()
+            print()
+            return
+
+        if len(split) == 1:
+            self.commands[ch].func()
+        else:
+            self.commands[ch].func(split[1:])
         print()
 
 
 if __name__ == '__main__':
-    VERSION = 'v0.5'
+    VERSION = 'v0.7'
     parser = argparse.ArgumentParser(
                 description='auTO ' + VERSION,
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
