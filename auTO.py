@@ -5,6 +5,7 @@ call matches, and provides a CLI to update the bracket.
 """
 import argparse
 import challonge
+import json
 import re
 import readline
 import sys
@@ -81,6 +82,22 @@ class Command(object):
     def __lt__(self, other):
         return self.index < other.index
 
+
+class MatchEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, MatchInfo):
+            return {
+                'id': obj.id,
+                'player1_id': obj.player1_id,
+                'player2_id': obj.player2_id,
+                'player1_tag': obj.player1_tag,
+                'player2_tag': obj.player2_tag,
+                'state': obj.state,
+                'in_progress': obj.in_progress,
+                'suggested_play_order': obj.suggested_play_order,
+            }
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 class MatchInfo(object):
     """
@@ -265,6 +282,10 @@ class auTO(object):
             self.commands[ch].func(split[1:])
         print()
 
+    def api_matches(self):
+        # TODO: Put this on the flask server.
+        return json.dumps(self.open_matches, cls=MatchEncoder)
+
 
 if __name__ == '__main__':
     VERSION = 'v0.7'
@@ -275,7 +296,7 @@ if __name__ == '__main__':
         "tourney_url",
         help="the URL of the tourney")
     parser.add_argument(
-        "--config_file",
+        "--config-file",
         default=defaults.DEFAULT_CONFIG_FILENAME,
         help="the config file to read your Challonge credentials from")
     args = parser.parse_args()
@@ -290,4 +311,6 @@ if __name__ == '__main__':
 
     while True:
         auto.print_open_matches()
+        print(auto.api_matches())
+        sys.exit()
         auto.prompt()

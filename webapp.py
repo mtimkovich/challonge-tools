@@ -94,6 +94,7 @@ def valid_tourney_url(name):
 
     return True, None
 
+# TODO: Add blueprint for auTO routes.
 
 @app.route('/', methods=['GET', 'POST'])
 def main():
