@@ -20,8 +20,11 @@ from create_amateur_bracket import AmateurBracketRequiredMatchesIncompleteError
 from create_amateur_bracket import create_amateur_bracket
 import garpr_seeds_challonge
 
+from auTO_server import auto
+
 
 app = Flask(__name__)
+app.register_blueprint(auto, url_prefix='/auTO')
 sslify = SSLify(app)
 app.url_map.strict_slashes = False
 

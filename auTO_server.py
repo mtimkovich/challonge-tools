@@ -1,13 +1,13 @@
 from flask import Blueprint, render_template, abort, jsonify, request
 import json
 
-from auTO
+import auTO
 
 auto = Blueprint('auTO', __name__)
 
-@auto.route('/'):
-    # TODO: Load Vue page
-    pass
+@auto.route('/')
+def index():
+    return 'TODO: Load Vue page'
 
 class MatchEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -25,11 +25,15 @@ class MatchEncoder(json.JSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
-@auto.route('/api/get_matches', method=['POST']):
+@auto.route('/api/get_matches', methods=['POST'])
+def get_matches():
     url = request.form.get('url')
-    to = auTo.auTO(url)
+    # TODO: Get Challonge login info.
+    # TODO: Pass in authorization to auTO.
+    to = auTO.auTO(url)
 
     return jsonify(to.open_matches, cls=MatchEncoder)
 
-@auto.route('/api/report', method=['POST']):
+@auto.route('/api/report', methods=['POST'])
+def report():
     pass
