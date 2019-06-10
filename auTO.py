@@ -271,6 +271,7 @@ class auTO(object):
         return json.dumps(self.open_matches, cls=MatchEncoder)
 
 
+# TODO: Move the command-line tool into a separate file.
 if __name__ == '__main__':
     VERSION = 'v0.7'
     parser = argparse.ArgumentParser(

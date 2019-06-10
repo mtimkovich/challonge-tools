@@ -26,8 +26,8 @@ class MatchEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 @auto.route('/api/get_matches', method=['POST']):
-    r = request.get_json()
-    to = auTo.auTO(r.url)
+    url = request.form.get('url')
+    to = auTo.auTO(url)
 
     return jsonify(to.open_matches, cls=MatchEncoder)
 
