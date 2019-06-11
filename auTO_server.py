@@ -1,13 +1,17 @@
-from flask import Blueprint, render_template, abort, jsonify, request
+from flask import Blueprint, abort, jsonify, request, session, url_for
+from flask_cors import CORS
 import json
 
 import auTO
+# import challonge
+import util_challonge
 
 auto = Blueprint('auTO', __name__)
+CORS(auto, resources={r'/*': {'origins': '*'}})
 
 @auto.route('/')
 def index():
-    return 'TODO: Load Vue page'
+    return 'TODO: return Vue page'
 
 class MatchEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -28,8 +32,8 @@ class MatchEncoder(json.JSONEncoder):
 @auto.route('/api/get_matches', methods=['POST'])
 def get_matches():
     url = request.form.get('url')
-    # TODO: Get Challonge login info.
-    # TODO: Pass in authorization to auTO.
+    # TODO: Use session.
+    util_challonge.set_challonge_credentials_from_config('../challonge.ini')
     to = auTO.auTO(url)
 
     return jsonify(to.open_matches, cls=MatchEncoder)
