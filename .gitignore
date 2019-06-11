@@ -112,6 +112,3 @@ challonge_tools_env.bak/
 
 # Challonge Credentials
 akbiggs_challonge.ini
-
-# Local installed PIP packages
-src/
