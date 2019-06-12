@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, jsonify, request, session, url_for
+from flask import Blueprint, abort, jsonify, request, session, make_response
 from flask_cors import CORS
 import json
 
@@ -31,12 +31,16 @@ class MatchEncoder(json.JSONEncoder):
 
 @auto.route('/api/get_matches', methods=['POST'])
 def get_matches():
-    url = request.form.get('url')
+    url = request.get_json().get('url')
     # TODO: Use session.
     util_challonge.set_challonge_credentials_from_config('../challonge.ini')
     to = auTO.auTO(url)
 
-    return jsonify(to.open_matches, cls=MatchEncoder)
+    data = json.dumps(to.open_matches, cls=MatchEncoder)
+    resp = make_response(data)
+    resp.mimetype = 'application/json'
+
+    return resp
 
 @auto.route('/api/report', methods=['POST'])
 def report():

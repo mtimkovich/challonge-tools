@@ -14,7 +14,7 @@
 
     <v-content>
       <v-layout row wrap>
-        <v-flex xs6 v-for="match in matches" :key="match.suggsted_match_order" pa-3>
+        <v-flex xs6 v-for="match in matches" :key="match.suggested_match_order" pa-3>
           <v-card>
             <v-card-title class="headline">
               {{match.player1_tag}} vs. {{match.player2_tag}}
@@ -38,7 +38,7 @@ import axios from 'axios';
 
 export default {
   name: 'App',
-  data () {
+  data() {
     return {
       matches: [],
     }
