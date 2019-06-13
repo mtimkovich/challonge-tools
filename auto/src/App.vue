@@ -15,10 +15,13 @@
 
     <v-content>
       <v-layout row wrap>
-        <v-flex xs6 v-for="match in sorted_matches" :key="match.suggested_match_order" pa-3>
+        <v-flex xs6 v-for="match in sorted_matches" :key="match.suggested_play_order" pa-3>
           <v-card :class="{'grey lighten-4': match.in_progress}">
-            <v-card-title class="headline">
-              {{match.player1_tag}} vs. {{match.player2_tag}}
+            <v-card-title>
+              <div>
+                <span class="headline">{{match.player1_tag}} vs. {{match.player2_tag}}</span><br>
+                <span class="grey--text">{{match.round}}</span>
+              </div>
             </v-card-title>
 
             <v-card-actions>
@@ -53,23 +56,21 @@ export default {
     }
   },
   computed: {
-    sorted_matches: function() {
-      function compare(a, b) {
+    sorted_matches() {
+      return this.matches.concat().sort((a, b) => {
         if (a.in_progress === b.in_progress) {
-          return a.suggested_match_order - b.suggested_match_order;
+          return a.suggested_play_order - b.suggested_play_order;
         } else {
           return a.in_progress ? 1 : -1;
         }
-      }
-
-      return this.matches.concat().sort(compare);
+      })
     }
   },
   mounted() {
     axios.post('http://localhost:5000/auTO/api/get_matches', {
       url: 'https://mtvmelee.challonge.com/100_amateur',
     })
-    .then(response => (this.matches = response.data))
+    .then(response => this.matches = response.data)
   }
 }
 </script>

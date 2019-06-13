@@ -24,6 +24,7 @@ class MatchEncoder(json.JSONEncoder):
                 'player2_tag': obj.player2_tag,
                 'state': obj.state,
                 'in_progress': False,
+                'round': obj.round,
                 'suggested_play_order': obj.suggested_play_order,
             }
         else:

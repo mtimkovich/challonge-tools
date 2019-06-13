@@ -94,6 +94,7 @@ class MatchInfo(object):
         self.state = match['state']
         self.suggested_play_order = match['suggested_play_order']
         self.identifier = match['identifier']
+        self.round = match['round']
 
         self.in_progress = match['underway_at'] is not None
         self.participants = participants
@@ -160,9 +161,43 @@ class auTO(object):
             Command('q', 'quit', 'quit', sys.exit),
         )
 
+    def _human_round_names(self, matches):
+        """Convert round names from numbers into strings like WQF and LF."""
+        last_round = matches[-1]['round']
+
+        SUFFIXES = ['GF', 'F', 'SF', 'QF']
+
+        rounds = {}
+        for i, finals in enumerate(SUFFIXES):
+            rounds[last_round-i] = finals
+        for i, finals in enumerate(SUFFIXES[1:]):
+            rounds[-(last_round-i)-1] = finals
+
+        reset = matches[-1]['round'] == matches[-2]['round']
+        reset_count = 1
+
+        for m in matches:
+            r = m['round']
+            name = 'W' if r > 0 else 'L'
+            if r not in rounds:
+                name = '{}R{}'.format(name, abs(r))
+            else:
+                if rounds[r] != 'GF':
+                    name += rounds[r]
+                else:
+                    name = 'GF'
+
+                    if reset:
+                        name += str(reset_count)
+                        reset_count += 1
+
+            m['round'] = name
+
+
     def update_matches(self):
         """Get the latest match data from Challonge."""
         matches = challonge.matches.index(self.tourney_name)
+        self._human_round_names(matches)
         match_infos = [MatchInfo(m, self.participants) for m in matches]
 
         # Set in progress based on our stored values.
