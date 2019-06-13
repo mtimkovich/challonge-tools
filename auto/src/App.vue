@@ -26,7 +26,7 @@
 
             <v-card-actions>
               <!-- TODO: Pull up reporting dialog. -->
-              <v-btn flat color="success">Report Score</v-btn>
+              <v-btn flat color="success" @click.stop="report_dialog=true">Report Score</v-btn>
               <v-btn flat icon @click="toggle_in_progress(match)">
                 <v-icon v-if="match.in_progress">pause</v-icon>
                 <v-icon v-else>play_arrow</v-icon>
@@ -47,6 +47,7 @@ export default {
   data() {
     return {
       matches: [],
+      report_dialog: false,
     }
   },
   methods: {
@@ -66,7 +67,7 @@ export default {
       })
     }
   },
-  mounted() {
+  created() {
     axios.post('http://localhost:5000/auTO/api/get_matches', {
       url: 'https://mtvmelee.challonge.com/100_amateur',
     })
