@@ -5,25 +5,28 @@
         <span>auTO</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-text-field
-                       hide-details
-                       single-line
-                       label="Tournament URL"
-                       ></v-text-field>
+      <!-- TODO: "Call" matches. -->
+      <v-text-field hide-details
+                    single-line
+                    label="Tournament URL">
+      </v-text-field>
+        <!-- TODO: # of setups. -->
     </v-toolbar>
 
     <v-content>
       <v-layout row wrap>
-        <v-flex xs6 v-for="match in matches" :key="match.suggested_match_order" pa-3>
-          <v-card>
+        <v-flex xs6 v-for="match in sorted_matches" :key="match.suggested_match_order" pa-3>
+          <v-card :class="{'grey lighten-4': match.in_progress}">
             <v-card-title class="headline">
               {{match.player1_tag}} vs. {{match.player2_tag}}
             </v-card-title>
 
             <v-card-actions>
+              <!-- TODO: Pull up reporting dialog. -->
               <v-btn flat color="success">Report Score</v-btn>
-              <v-btn flat icon>
-                <v-icon>play_arrow</v-icon>
+              <v-btn flat icon @click="toggle_in_progress(match)">
+                <v-icon v-if="match.in_progress">pause</v-icon>
+                <v-icon v-else>play_arrow</v-icon>
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -41,6 +44,25 @@ export default {
   data() {
     return {
       matches: [],
+    }
+  },
+  methods: {
+    // TODO: Save in progress as cookie so it persists on reload.
+    toggle_in_progress(match) {
+      match.in_progress = !match.in_progress;
+    }
+  },
+  computed: {
+    sorted_matches: function() {
+      function compare(a, b) {
+        if (a.in_progress === b.in_progress) {
+          return a.suggested_match_order - b.suggested_match_order;
+        } else {
+          return a.in_progress ? 1 : -1;
+        }
+      }
+
+      return this.matches.concat().sort(compare);
     }
   },
   mounted() {

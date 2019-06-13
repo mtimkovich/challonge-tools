@@ -23,7 +23,7 @@ class MatchEncoder(json.JSONEncoder):
                 'player1_tag': obj.player1_tag,
                 'player2_tag': obj.player2_tag,
                 'state': obj.state,
-                'in_progress': obj.in_progress,
+                'in_progress': False,
                 'suggested_play_order': obj.suggested_play_order,
             }
         else:
