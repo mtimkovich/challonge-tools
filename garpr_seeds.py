@@ -41,14 +41,8 @@ def _fetch_garpr_rankings(region):
 
 
 def _fetch_braacket_rankings():
-    r = requests.get('https://braacket.com/league/mtvmelee/ranking?rows=200')
+    r = requests.get('http://braacket.com/league/mtvmelee/ranking?rows=200&export=csv')
 
-    csv_link = [line for line in r.text.splitlines()
-                     if 'do_loading_download' in line][0]
-    csv_link = re.search("href='([^']+)'", csv_link)
-    csv_link = csv_link.group(1)
-
-    r = requests.get('https://braacket.com' + csv_link)
     rankings = []
 
     for i, line in enumerate(r.text.splitlines()):
