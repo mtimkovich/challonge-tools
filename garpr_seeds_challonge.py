@@ -47,7 +47,8 @@ def _sort_by_seeds(values, seeds):
     return [x[1] for x in sorted_enumerated_values]
 
 
-def seed_tournament(tourney_url, region, shuffle):
+# def seed_tournament(tourney_url, region, shuffle):
+def seed_tournament(tourney_url, shuffle):
     """
     @params: same as argparse params
 
@@ -66,7 +67,8 @@ def seed_tournament(tourney_url, region, shuffle):
     # Get the seeds for the participants.
     participants = challonge.participants.index(tourney_name)
     participant_names = [util_challonge.get_participant_name(x) for x in participants]
-    ranks = garpr_seeds.get_garpr_ranks(participant_names, region)
+    # ranks = garpr_seeds.get_garpr_ranks(participant_names, region)
+    ranks = garpr_seeds.get_braacket_ranks(participant_names)
     new_seeds = garpr_seeds.ranks_to_seeds(ranks)
 
     # Let the user know which participants couldn't be found.

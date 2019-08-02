@@ -33,12 +33,8 @@ app.secret_key = os.getenv('SECRET_KEY')
 
 @app.before_request
 def make_session_persistent():
-    """
-    Make credentials persist after closing the browser, and expire after
-    7 days.
-    """
+    """Make credentials persist after closing the browser."""
     session.permanent = True
-    app.permanent_session_lifetime = timedelta(days=7)
 
 
 def link(text, src=None):
@@ -124,7 +120,6 @@ def main():
         try:
             sorted_players, unknown_players = garpr_seeds_challonge.\
                 seed_tournament(params['tourney_url'],
-                                region=session['region'],
                                 shuffle=params['shuffle'])
 
         except ValueError as e:
@@ -243,13 +238,12 @@ def settings():
         args = {
             'username': session.get('username', ''),
             'api_key': session.get('api_key', ''),
-            'region': session.get('region', 'norcal'),
         }
 
         return render_template('settings.html', **args)
 
     elif request.method == 'POST':
-        for value in ['username', 'api_key', 'region']:
+        for value in ['username', 'api_key']:
             session[value] = request.form.get(value)
 
         flash('Credentials saved!', 'success')

@@ -40,6 +40,26 @@ def _fetch_garpr_rankings(region):
     return requests.get(rankings_url).json()["ranking"]
 
 
+def _fetch_braacket_rankings():
+    r = requests.get('https://braacket.com/league/mtvmelee/ranking?rows=200')
+
+    csv_link = [line for line in r.text.splitlines()
+                     if 'do_loading_download' in line][0]
+    csv_link = re.search("href='([^']+)'", csv_link)
+    csv_link = csv_link.group(1)
+
+    r = requests.get('https://braacket.com' + csv_link)
+    rankings = []
+
+    for i, line in enumerate(r.text.splitlines()):
+        if i == 0:
+            continue
+        parts = line.split(',')
+        rankings.append({'rank': int(parts[0]), 'name': parts[1][1:-1]})
+
+    return rankings
+
+
 def _find_ranking_for_name(name, rankings):
     """Finds a user's ranking info.
 
@@ -127,6 +147,24 @@ def get_garpr_ranks(names, region):
       rank for any player that is not currently on the gaR PR.
     """
     rankings = _fetch_garpr_rankings(region)
+    name_rankings = [_find_ranking_for_name(name, rankings) for name in names]
+    ranks = [_get_rank(ranking) for ranking in name_rankings]
+    return ranks
+
+
+def get_braacket_ranks(names):
+    """Gets the seeds for names based off of gaR PR rankings.
+
+    Args:
+      names: A list of names of the people you want to get ranks for. These
+             names should correspond to their name on the gaR PR.
+      region: The gaR PR region that you want to pull rankings from.
+
+    Returns:
+      A list of ranks for those players. UNKNOWN_RANK will be returned as the
+      rank for any player that is not currently on the gaR PR.
+    """
+    rankings = _fetch_braacket_rankings()
     name_rankings = [_find_ranking_for_name(name, rankings) for name in names]
     ranks = [_get_rank(ranking) for ranking in name_rankings]
     return ranks
