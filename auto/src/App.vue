@@ -13,6 +13,8 @@
         <!-- TODO: # of setups. -->
     </v-toolbar>
 
+    <ReportDialog v-model="report_dialog" :match="current_match"></ReportDialog>
+
     <v-content>
       <v-layout row wrap>
         <v-flex xs6 v-for="match in sorted_matches" :key="match.suggested_play_order" pa-3>
@@ -26,7 +28,7 @@
 
             <v-card-actions>
               <!-- TODO: Pull up reporting dialog. -->
-              <v-btn flat color="success" @click.stop="report_dialog=true">Report Score</v-btn>
+              <v-btn flat color="success" @click.stop="openReportDialog(match)">Report Score</v-btn>
               <v-btn flat icon @click="toggle_in_progress(match)">
                 <v-icon v-if="match.in_progress">pause</v-icon>
                 <v-icon v-else>play_arrow</v-icon>
@@ -40,21 +42,32 @@
 </template>
 
 <script>
+import ReportDialog from './components/ReportDialog.vue';
+
 import axios from 'axios';
 
 export default {
   name: 'App',
+  components: {
+    ReportDialog
+  },
   data() {
     return {
       matches: [],
       report_dialog: false,
+      current_match: Object,
     }
   },
   methods: {
     // TODO: Save in progress as cookie so it persists on reload.
     toggle_in_progress(match) {
       match.in_progress = !match.in_progress;
-    }
+    },
+
+    openReportDialog(match) {
+      this.current_match = match;
+      this.report_dialog = true;
+    },
   },
   computed: {
     sorted_matches() {
@@ -71,7 +84,9 @@ export default {
     axios.post('http://localhost:5000/auTO/api/get_matches', {
       url: 'https://mtvmelee.challonge.com/100_amateur',
     })
-    .then(response => this.matches = response.data)
+    .then(response => {
+      this.matches = response.data
+    });
   }
 }
 </script>

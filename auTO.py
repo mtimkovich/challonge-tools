@@ -146,6 +146,8 @@ class auTO(object):
         self.in_progress_map = {}
         self.update_matches()
 
+        # TODO: See if the setup is also included in the challonge data.
+
         self.commands = Commander(
             Command('u', 'update', 'update match info', self.update_matches),
             Command('*', 'start',
