@@ -55,7 +55,7 @@ export default {
     return {
       matches: [],
       report_dialog: false,
-      current_match: Object,
+      current_match: null,
     }
   },
   methods: {
