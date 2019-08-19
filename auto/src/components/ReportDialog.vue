@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600" persistent>
+  <v-dialog v-model="dialog" max-width="600">
     <v-card>
       <v-card-title class="headline">Report Match</v-card-title>
 
@@ -34,7 +34,7 @@
         <v-btn color="success"
                flat
                :disabled="!valid"
-               @click.stop="dialog=false">
+               @click.stop="report()">
           Save
         </v-btn>
       </v-card-actions>
@@ -44,6 +44,8 @@
 
 
 <script>
+import axios from 'axios';
+
 export default {
   props: {
     value: Boolean,
@@ -73,7 +75,10 @@ export default {
         this.selected = id;
         this.players[id].score = 2;
       }
-    }
+    },
+    report() {
+      this.dialog = false;
+    },
   },
   computed: {
     dialog: {
