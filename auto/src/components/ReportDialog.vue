@@ -67,7 +67,12 @@ export default {
   methods: {
     // Toggle the selected winning player.
     select(id) {
-      this.selected = this.selected === id ? -1 : id;
+      if (this.selected === id) {
+        this.selected = -1;
+      } else {
+        this.selected = id;
+        this.players[id].score = 2;
+      }
     }
   },
   computed: {
