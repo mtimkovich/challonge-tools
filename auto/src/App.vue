@@ -18,7 +18,7 @@
     <v-content>
       <v-layout row wrap>
         <v-flex xs6 v-for="match in sorted_matches" :key="match.suggested_play_order" pa-3>
-          <v-card :class="{'grey lighten-4': match.in_progress}">
+          <v-card :class="{'grey lighten-3': match.in_progress}">
             <v-card-title>
               <div>
                 <span class="headline">{{match.player1_tag}} vs. {{match.player2_tag}}</span><br>
@@ -27,7 +27,6 @@
             </v-card-title>
 
             <v-card-actions>
-              <!-- TODO: Pull up reporting dialog. -->
               <v-btn flat color="success" @click.stop="openReportDialog(match)">Report Score</v-btn>
               <v-btn flat icon @click="toggle_in_progress(match)">
                 <v-icon v-if="match.in_progress">pause</v-icon>
