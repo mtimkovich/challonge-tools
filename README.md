@@ -236,6 +236,14 @@ $ python3 create_amateur_bracket.py mtvmelee72 \
       --use_double_elimination=False \
 ```
 
+# Create Next Tournament Iteration
+
+Useful for weekly tournament series, creates a new iteration of a tournament, copying the settings from the previous tournament. Could easily be ran automatedly, e.g. through a cron job.
+
+```
+$ python3 -i create_next.ini create_next_tournament.py
+```
+
 # Challonge Credentials Config
 
 `parse_challonge_config.py`: Developer tool for getting Challonge credentials
